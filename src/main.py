@@ -1,6 +1,9 @@
 import os
 import shutil
 
+from extract_title import extract_title
+from markdown_to_html import markdown_to_html_node
+
 
 def copy_files_recursive(source_dir_path, dest_dir_path):
     if not os.path.exists(dest_dir_path):
@@ -16,10 +19,27 @@ def copy_files_recursive(source_dir_path, dest_dir_path):
             copy_files_recursive(from_path, dest_path)
 
 
+def generate_page(from_path, template_path, dest_path):
+    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+    with open(from_path) as f:
+        markdown = f.read()
+    with open(template_path) as f:
+        template = f.read()
+    html_string = markdown_to_html_node(markdown).to_html()
+    title = extract_title(markdown)
+    html = template.replace("{{ Title }}", title).replace("{{ Content }}", html_string)
+    dest_dir = os.path.dirname(dest_path)
+    if dest_dir != "" and not os.path.exists(dest_dir):
+        os.makedirs(dest_dir)
+    with open(dest_path, "w") as f:
+        f.write(html)
+
+
 def main():
     if os.path.exists("public"):
         shutil.rmtree("public")
     copy_files_recursive("static", "public")
+    generate_page("content/index.md", "template.html", "public/index.html")
 
 
 if __name__ == "__main__":
