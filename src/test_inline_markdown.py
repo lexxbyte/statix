@@ -6,6 +6,7 @@ from inline_markdown import (
     split_nodes_delimiter,
     split_nodes_image,
     split_nodes_link,
+    text_to_textnodes,
 )
 from textnode import TextNode, TextType
 
@@ -281,6 +282,70 @@ class TestSplitNodesLink(unittest.TestCase):
         node = TextNode("an ![image](https://example.com/i.png) stays", TextType.TEXT)
         new_nodes = split_nodes_link([node])
         self.assertListEqual([node], new_nodes)
+
+
+class TestTextToTextNodes(unittest.TestCase):
+    def test_text_to_textnodes_full_example(self):
+        text = (
+            "This is **text** with an _italic_ word and a `code block` "
+            "and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) "
+            "and a [link](https://boot.dev)"
+        )
+        nodes = text_to_textnodes(text)
+        self.assertListEqual(
+            [
+                TextNode("This is ", TextType.TEXT),
+                TextNode("text", TextType.BOLD),
+                TextNode(" with an ", TextType.TEXT),
+                TextNode("italic", TextType.ITALIC),
+                TextNode(" word and a ", TextType.TEXT),
+                TextNode("code block", TextType.CODE),
+                TextNode(" and an ", TextType.TEXT),
+                TextNode(
+                    "obi wan image",
+                    TextType.IMAGE,
+                    "https://i.imgur.com/fJRm4Vk.jpeg",
+                ),
+                TextNode(" and a ", TextType.TEXT),
+                TextNode("link", TextType.LINK, "https://boot.dev"),
+            ],
+            nodes,
+        )
+
+    def test_text_to_textnodes_plain_text(self):
+        nodes = text_to_textnodes("just plain text")
+        self.assertListEqual([TextNode("just plain text", TextType.TEXT)], nodes)
+
+    def test_text_to_textnodes_only_bold(self):
+        nodes = text_to_textnodes("**bold only**")
+        self.assertListEqual([TextNode("bold only", TextType.BOLD)], nodes)
+
+    def test_text_to_textnodes_multiple_of_same_type(self):
+        nodes = text_to_textnodes("one **bold** two **strong** three")
+        self.assertListEqual(
+            [
+                TextNode("one ", TextType.TEXT),
+                TextNode("bold", TextType.BOLD),
+                TextNode(" two ", TextType.TEXT),
+                TextNode("strong", TextType.BOLD),
+                TextNode(" three", TextType.TEXT),
+            ],
+            nodes,
+        )
+
+    def test_text_to_textnodes_italic_and_code(self):
+        nodes = text_to_textnodes("_italic_ and `code`")
+        self.assertListEqual(
+            [
+                TextNode("italic", TextType.ITALIC),
+                TextNode(" and ", TextType.TEXT),
+                TextNode("code", TextType.CODE),
+            ],
+            nodes,
+        )
+
+    def test_text_to_textnodes_empty_string(self):
+        self.assertListEqual([], text_to_textnodes(""))
 
 
 if __name__ == "__main__":
