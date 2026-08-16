@@ -1,6 +1,6 @@
 import unittest
 
-from block_markdown import markdown_to_blocks
+from block_markdown import BlockType, block_to_block_type, markdown_to_blocks
 
 
 class TestMarkdownToBlocks(unittest.TestCase):
@@ -69,6 +69,83 @@ This is a paragraph of text. It has some **bold** and _italic_ words inside of i
         self.assertEqual(
             blocks[2],
             "- This is the first list item in a list block\n- This is a list item\n- This is another list item",
+        )
+
+
+class TestBlockToBlockType(unittest.TestCase):
+    def test_heading(self):
+        self.assertEqual(block_to_block_type("# Heading 1"), BlockType.HEADING)
+        self.assertEqual(block_to_block_type("## Heading 2"), BlockType.HEADING)
+        self.assertEqual(block_to_block_type("### Heading 3"), BlockType.HEADING)
+        self.assertEqual(block_to_block_type("#### Heading 4"), BlockType.HEADING)
+        self.assertEqual(block_to_block_type("##### Heading 5"), BlockType.HEADING)
+        self.assertEqual(block_to_block_type("###### Heading 6"), BlockType.HEADING)
+
+    def test_seven_hashes_is_paragraph(self):
+        self.assertEqual(
+            block_to_block_type("####### Too many"), BlockType.PARAGRAPH
+        )
+
+    def test_heading_requires_space(self):
+        self.assertEqual(block_to_block_type("#No space"), BlockType.PARAGRAPH)
+
+    def test_code_block(self):
+        block = "```\ncode here\nmore code\n```"
+        self.assertEqual(block_to_block_type(block), BlockType.CODE)
+
+    def test_single_line_code_is_paragraph(self):
+        self.assertEqual(block_to_block_type("```single line```"), BlockType.PARAGRAPH)
+
+    def test_quote(self):
+        self.assertEqual(
+            block_to_block_type(">quoted\n>more quote"), BlockType.QUOTE
+        )
+
+    def test_quote_with_space(self):
+        self.assertEqual(
+            block_to_block_type("> quoted\n> more quote"), BlockType.QUOTE
+        )
+
+    def test_quote_mixed_lines_is_paragraph(self):
+        self.assertEqual(
+            block_to_block_type(">quoted\nnot quoted"), BlockType.PARAGRAPH
+        )
+
+    def test_unordered_list(self):
+        self.assertEqual(
+            block_to_block_type("- item one\n- item two"), BlockType.UNORDERED_LIST
+        )
+
+    def test_unordered_list_requires_space(self):
+        self.assertEqual(
+            block_to_block_type("-item\n-item"), BlockType.PARAGRAPH
+        )
+
+    def test_unordered_list_mixed_lines_is_paragraph(self):
+        self.assertEqual(
+            block_to_block_type("- item one\nitem two"), BlockType.PARAGRAPH
+        )
+
+    def test_ordered_list(self):
+        self.assertEqual(
+            block_to_block_type("1. first\n2. second\n3. third"),
+            BlockType.ORDERED_LIST,
+        )
+
+    def test_ordered_list_wrong_start_is_paragraph(self):
+        self.assertEqual(
+            block_to_block_type("2. first\n3. second"), BlockType.PARAGRAPH
+        )
+
+    def test_ordered_list_skipped_number_is_paragraph(self):
+        self.assertEqual(
+            block_to_block_type("1. first\n3. third"), BlockType.PARAGRAPH
+        )
+
+    def test_plain_paragraph(self):
+        self.assertEqual(
+            block_to_block_type("This is just a normal paragraph"),
+            BlockType.PARAGRAPH,
         )
 
 
